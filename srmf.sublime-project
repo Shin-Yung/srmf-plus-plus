@@ -1,0 +1,25 @@
+{
+	"folders":
+	[
+		{
+			"path": "./src",
+			"name": "srmf++",
+			"file_exclude_patterns":[
+			 	"*.o",
+			 	"*.log",
+			 	"xout"
+			],
+			"folder_exclude_patterns":[
+				"build", 
+				"include"
+			]
+		}
+	],
+	"build_systems":
+	[
+		{
+			"cmd": ["make"],
+			"working_dir": "./src"
+		}
+	]
+}

@@ -1,0 +1,27 @@
+# no .o and .a files
+*.[oa]
+
+# the option.mk file included in Makefile
+make_options.mk
+
+# no a.out
+a.out
+
+# ignore other input files
+#input.*
+
+# except for one
+!input.parm
+
+# ignore the result files
+res_*.data
+res_*.txt
+
+# ignore the sublime file
+*.sublime-workspace
+
+# others
+*.sublime-workspace
+root_dir.mk
+check/*
+build/*
