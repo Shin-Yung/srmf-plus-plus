@@ -17,7 +17,7 @@
 #include "modelparams.h"
 #include "strmatrix.h"
 #include "../lattice/lattice.h"
-#include "../diag/matrix.h"
+#include "./matrix.h"
 #include "./quantum_op.h"
 
 namespace model {

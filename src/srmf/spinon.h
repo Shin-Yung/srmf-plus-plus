@@ -5,8 +5,8 @@
 * Last Modified time: 2017-06-11 16:49:03
 * Copyright (C) Amal Medhi, amedhi@iisertvm.ac.in
 *----------------------------------------------------------------------------*/
-#ifndef MF_MODEL_H
-#define MF_MODEL_H
+#ifndef SPINON_H
+#define SPINON_H
 
 #include <iostream>
 #include <string>
@@ -14,15 +14,15 @@
 #include <vector>
 #include <stdexcept>
 #include "../scheduler/task.h"
+#include "../lattice/graph.h"
 #include "../model/quantum_op.h"
 #include "../model/model.h"
-#include "../lattice/graph.h"
+#include "../model/matrix.h"
 //#include "./blochbasis.h"
-#include "./matrix.h"
 
 constexpr std::complex<double> ii(void) { return std::complex<double>{0.0,static_cast<double>(1.0)}; }
 
-namespace diag {
+namespace srmf {
 
 class UnitcellTerm
 {

@@ -12,17 +12,17 @@
 #include "../lattice/constants.h"
 #include "../lattice/lattice.h"
 #include "../lattice/graph.h"
+#include "../lattice/blochbasis.h"
 #include "../model/model.h"
-#include "./mf_model.h"
-#include "./blochbasis.h"
+#include "./spinon.h"
 
-namespace diag {
+namespace srmf {
 
-class Diag : public scheduler::Worker
+class SRMF : public scheduler::Worker
 {
 public:
-  Diag(const input::Parameters& parms); 
-  ~Diag() {}
+  SRMF(const input::Parameters& parms); 
+  ~SRMF() {}
   int start(const input::Parameters& parms) override { return 0; }
   int run(const input::Parameters& parms) override;
   void finish(void) override {} 
@@ -49,6 +49,6 @@ private:
 };
 
 
-} // end namespace diag
+} // end namespace srmf
 
 #endif

@@ -8,11 +8,11 @@
 *----------------------------------------------------------------------------*/
 #include <iomanip>
 #include <fstream>
-#include "diag.h"
+#include "srmf.h"
 
-namespace diag {
+namespace srmf {
 
-Diag::Diag(const input::Parameters& inputs) 
+SRMF::SRMF(const input::Parameters& inputs) 
   : graph_(inputs) 
   , model_(inputs, graph_.lattice())
   , mf_model_(model_,graph_)
@@ -64,9 +64,9 @@ Diag::Diag(const input::Parameters& inputs)
   }
 }
 
-int Diag::run(const input::Parameters& inputs) 
+int SRMF::run(const input::Parameters& inputs) 
 {
-  //std::cout << " Exiting at Diag::Diag\n";
+  //std::cout << " Exiting at SRMF::SRMF\n";
   //std::exit(0);
 
 
@@ -80,7 +80,7 @@ int Diag::run(const input::Parameters& inputs)
   }
 
   // Band structure
-  //std::cout << "****Diag::run:: returning****\n"; return 0;
+  //std::cout << "****SRMF::run:: returning****\n"; return 0;
   //std::ios state(NULL);
   //state.copyfmt(std::cout);
   //std::cout << std::scientific << std::uppercase << std::setprecision(6) << std::right;
@@ -123,7 +123,7 @@ int Diag::run(const input::Parameters& inputs)
   return 0;
 }
 
-int Diag::compute_chern_number(void) 
+int SRMF::compute_chern_number(void) 
 {
   //using xy_pair = std::pair<std::complex<double>,std::complex<double> >;
   //std::vector<xy_pair> BerryConnection(num_kpoints_);
@@ -215,7 +215,7 @@ int Diag::compute_chern_number(void)
   return 0;
 }
 
-int Diag::compute_band_gap(void) 
+int SRMF::compute_band_gap(void) 
 {
   std::ofstream fout("res_bandgap.txt");
   if (kblock_dim_<2) {
@@ -257,9 +257,9 @@ int Diag::compute_band_gap(void)
   return 0;
 }
 
-void Diag::print_copyright(std::ostream& os)
+void SRMF::print_copyright(std::ostream& os)
 {
-  std::cout << "Diag\n";
+  std::cout << "SRMF\n";
 }
 
 

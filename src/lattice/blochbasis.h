@@ -11,8 +11,8 @@
 #include <vector>
 #include <set>
 #include <stdexcept>
-#include "../lattice/graph.h"
-#include "matrix.h"
+#include "graph.h"
+#include "../model/matrix.h"
 
 namespace basis {
 

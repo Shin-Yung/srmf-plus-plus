@@ -3,10 +3,10 @@
 * All rights reserved.
 * Author: Amal Medhi
 *----------------------------------------------------------------------------*/
-#ifndef __DIAG_PLUS_PLUS_H
-#define __DIAG_PLUS_PLUS_H
+#ifndef __SRMF_PLUS_PLUS_H
+#define __SRMF_PLUS_PLUS_H
 
 #include "./scheduler/scheduler.h"
-#include "./diag/diag.h"
+#include "./srmf/srmf.h"
 
 #endif

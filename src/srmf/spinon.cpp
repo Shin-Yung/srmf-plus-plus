@@ -5,12 +5,12 @@
 * Last Modified time: 2017-06-17 12:12:07
 * Copyright (C) Amal Medhi, amedhi@iisertvm.ac.in
 *----------------------------------------------------------------------------*/
-#include "./mf_model.h"
+#include "./spinon.h"
 #include <boost/algorithm/string.hpp>
 #include "../expression/complex_expression.h"
 //#include "../expression/expression.h"
 
-namespace diag {
+namespace srmf {
 
 MF_Model::MF_Model(const model::Hamiltonian& model, 
   const lattice::LatticeGraph& graph)
@@ -363,7 +363,7 @@ void UnitcellTerm::eval_coupling_constant(const model::ModelParams& pvals, const
 
 
 
-} // end namespace diag
+} // end namespace srmf
 
 
 

@@ -22,13 +22,13 @@ SRCS+= utils/utils.cpp
 SRCS+= lattice/lattice.cpp
 SRCS+= lattice/latticelibrary.cpp
 SRCS+= lattice/graph.cpp
+SRCS+= lattice/blochbasis.cpp
 SRCS+= model/strmatrix.cpp
 SRCS+= model/hamiltonian_term.cpp
 SRCS+= model/model.cpp
 SRCS+= model/modellibrary.cpp
-SRCS+= diag/blochbasis.cpp
-SRCS+= diag/mf_model.cpp
-SRCS+= diag/diag.cpp
+SRCS+= srmf/spinon.cpp
+SRCS+= srmf/srmf.cpp
 SRCS+= main.cpp
 VMC_SRCS = $(addprefix src/,$(SRCS))
 #-------------------------------------------------------------
@@ -40,13 +40,13 @@ HDRS=    scheduler/mpi_comm.h \
          utils/complex_expression.h \
          utils/utils.h \
          lattice/constants.h lattice/lattice.h lattice/graph.h \
+	 lattice/blochbasis.h \
 	 montecarlo/simulator.h \
          model/strmatrix.h model/modelparams.h  model/quantum_op.h \
 	 model/hamiltonian_term.h \
-	 diag/blochbasis.h \
-	 diag/mf_model.h \
+	 srmf/spinon.h \
 	 model/model.h \
-	 diag/diag.h 
+	 srmf/srmf.h 
 #         expression/expression.h expression/shunting_yard.h \
          expression/tokens.h expression/functions.h expression/objects.h \
          expression/pack.h \
