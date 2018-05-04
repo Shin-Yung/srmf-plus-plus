@@ -16,7 +16,7 @@ enum class spin { UP, DN, UD, SIGMA, SINGLET };
 
 enum class op_id {
   ni_sigma, ni, cdagc_up, cdagc_dn, cdagc_sigma, sisj, sisj_plus, 
-  niup_nidn, cdagup_cdagdn, null
+  niup_nidn, cdagup_cdagdn, ciup_dag, cidn_dag, null
 };
 
 enum class op_type { quadratic, pairing, quartic };
@@ -123,6 +123,18 @@ class dnspin_hop : public quantum_op
 {
 public:
   dnspin_hop() : quantum_op("dnspin_hop", op_id::cdagc_dn, spin::DN, op_type::quadratic) {}
+};
+
+class ciup_dag : public quantum_op
+{
+public:
+  ciup_dag() : quantum_op("ciup_dag", op_id::ciup_dag, spin::UP, op_type::quadratic) {}
+};
+
+class cidn_dag : public quantum_op
+{
+public:
+  cidn_dag() : quantum_op("cidn_dag", op_id::cidn_dag, spin::DN, op_type::quadratic) {}
 };
 
 class pair_create : public quantum_op

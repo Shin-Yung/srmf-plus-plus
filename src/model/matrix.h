@@ -20,6 +20,9 @@ using RealVector = Eigen::VectorXd;
 using RealMatrix = Eigen::MatrixXd;
 using ComplexVector = Eigen::VectorXcd;
 using ComplexMatrix = Eigen::MatrixXcd;
+using ArrayXd = Eigen::ArrayXd;
+using ArrayXcd = Eigen::ArrayXcd;
+
 
 #ifdef REAL_WAVEFUNCTION
   using amplitude_t = double;

@@ -69,6 +69,10 @@ public:
     { this->operator[](v).type = new_val; }
   void change_type_value(const site_iterator& vi, const unsigned& new_val) 
     { this->operator[](*vi).type = new_val; }
+  void change_site_dimension(const site_descriptor& v, const unsigned& new_val) 
+    { this->operator[](v).dim = new_val; }
+  void change_site_dimension(const site_iterator& vi, const unsigned& new_val) 
+    { this->operator[](*vi).dim = new_val; }
   void change_type_value(const bond_iterator& ei, const unsigned& new_val) 
     { this->operator[](*ei).type = new_val; }
   void change_type_value(const out_bond_iterator& ei, const unsigned& new_val) 

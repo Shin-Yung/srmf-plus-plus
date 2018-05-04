@@ -47,12 +47,12 @@ private:
   std::vector<Vector3d> bond_vectors_;
 };
 
-class MF_Model : public model::Hamiltonian
+class Spinon : public model::Hamiltonian
 {
 public:
-  MF_Model() {}
-  MF_Model(const model::Hamiltonian& model, const lattice::LatticeGraph& graph);
-  ~MF_Model() {}
+  Spinon() {}
+  Spinon(const model::Hamiltonian& model, const lattice::LatticeGraph& graph);
+  ~Spinon() {}
   int init(const lattice::Lattice& lattice) override;
   int finalize(const lattice::LatticeGraph& graph);
   void update(const input::Parameters& inputs);
@@ -78,6 +78,6 @@ private:
 };
 
 
-} // end namespace diag
+} // end namespace srmf
 
 #endif

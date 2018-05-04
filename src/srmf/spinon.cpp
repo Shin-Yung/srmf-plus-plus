@@ -12,7 +12,7 @@
 
 namespace srmf {
 
-MF_Model::MF_Model(const model::Hamiltonian& model, 
+Spinon::Spinon(const model::Hamiltonian& model, 
   const lattice::LatticeGraph& graph)
 : model::Hamiltonian(model)
 {
@@ -24,12 +24,12 @@ MF_Model::MF_Model(const model::Hamiltonian& model,
   build_unitcell_terms(graph);
 }
 
-int MF_Model::init(const lattice::Lattice& lattice)
+int Spinon::init(const lattice::Lattice& lattice)
 {
   return Model::init(lattice);
 }
 
-int MF_Model::finalize(const lattice::LatticeGraph& graph)
+int Spinon::finalize(const lattice::LatticeGraph& graph)
 {
   Model::finalize(graph.lattice());
   num_basis_sites_ = graph.lattice().num_basis_sites();
@@ -41,25 +41,25 @@ int MF_Model::finalize(const lattice::LatticeGraph& graph)
   return 0;
 }
 
-void MF_Model::update(const input::Parameters& inputs)
+void Spinon::update(const input::Parameters& inputs)
 {
   Model::update_parameters(inputs);
   update_terms();
 }
 
-void MF_Model::update_terms(void)
+void Spinon::update_terms(void)
 {
   update_unitcell_terms();
 }
 
-void MF_Model::update_site_parameter(const std::string& pname, const double& pvalue)
+void Spinon::update_site_parameter(const std::string& pname, const double& pvalue)
 {
   Model::update_parameter(pname, pvalue);
   for (unsigned i=0; i<usite_terms_.size(); ++i) 
     usite_terms_[i].eval_coupling_constant(Model::parameters(),Model::constants());
 }
 
-void MF_Model::build_unitcell_terms(const lattice::LatticeGraph& graph)
+void Spinon::build_unitcell_terms(const lattice::LatticeGraph& graph)
 {
   // take only quadratic & pairing terms
   int num_siteterms = 0;
@@ -92,7 +92,7 @@ void MF_Model::build_unitcell_terms(const lattice::LatticeGraph& graph)
   }
 }
 
-void MF_Model::construct_kspace_block(const Vector3d& kvec)
+void Spinon::construct_kspace_block(const Vector3d& kvec)
 {
   work.setZero(); 
   pairing_block_.setZero();
@@ -134,7 +134,7 @@ void MF_Model::construct_kspace_block(const Vector3d& kvec)
 }
 
 
-void MF_Model::update_unitcell_terms(void)
+void Spinon::update_unitcell_terms(void)
 {
   for (unsigned i=0; i<ubond_terms_.size(); ++i) 
     ubond_terms_[i].eval_coupling_constant(Model::parameters(),Model::constants());
@@ -341,7 +341,7 @@ void UnitcellTerm::eval_coupling_constant(const model::ModelParams& pvals, const
   }
 }
 
-/*void MF_Model::check_xml(void)
+/*void Spinon::check_xml(void)
 {
   std::cout << "Checking XML parser\n";
   pugi::xml_document doc;

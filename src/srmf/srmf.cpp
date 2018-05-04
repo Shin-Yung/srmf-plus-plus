@@ -14,112 +14,17 @@ namespace srmf {
 
 SRMF::SRMF(const input::Parameters& inputs) 
   : graph_(inputs) 
-  , model_(inputs, graph_.lattice())
-  , mf_model_(model_,graph_)
   , blochbasis_(graph_)
+  , model_(inputs, graph_.lattice())
+  , sr_parms_(inputs, graph_)
+  , spinon_(model_,graph_)
+  , rotor_(inputs,model_,graph_,sr_parms_)
 {
-  // outputs
-  int info;
-  need_chern_number_ = inputs.set_value("chern_number",false,info);
-  need_ebands_full_ = inputs.set_value("ebands_full",false,info);
-  need_ebands_symm_ = inputs.set_value("ebands_symm",false,info);
-  need_band_gap_ = inputs.set_value("band_gap",false,info);
-
-  num_kpoints_ = blochbasis_.num_kpoints();
-  kblock_dim_ = blochbasis_.subspace_dimension();
-  if (need_chern_number_) {
-    blochbasis_.gen_mesh_neighbors(graph_.lattice());
-  }
-
-  if (need_ebands_symm_) {
-    // High symmetry BZ points for FCC lattice
-    Vector3d Gamma = Vector3d(0,0,0);
-    Vector3d X = 0.5*(blochbasis_.vector_b2()+blochbasis_.vector_b3());
-    Vector3d W = (0.25*blochbasis_.vector_b1()+0.50*blochbasis_.vector_b2()
-                     +0.75*blochbasis_.vector_b3());
-    Vector3d L = 0.5*(blochbasis_.vector_b1()+blochbasis_.vector_b2()
-                     +blochbasis_.vector_b3());
-    Vector3d K = (3.0/8*blochbasis_.vector_b1()+3.0/8*blochbasis_.vector_b2()
-                     +3.0/4*blochbasis_.vector_b3());
-    /*
-    std::cout << "W = " << W.transpose() << "\n"; 
-    std::cout << "L = " << L.transpose() << "\n"; 
-    std::cout << "K = " << K.transpose() << "\n"; 
-    getchar();
-    */
-
-    int N = 100;
-    Vector3d step = (X-Gamma)/N;
-    for (int i=0; i<N; ++i) symm_line_.push_back(Gamma+i*step);
-    step = (W-X)/N;
-    for (int i=0; i<N; ++i) symm_line_.push_back(X+i*step);
-    step = (L-W)/N;
-    for (int i=0; i<N; ++i) symm_line_.push_back(W+i*step);
-    step = (Gamma-L)/N;
-    for (int i=0; i<N; ++i) symm_line_.push_back(L+i*step);
-    step = (K-Gamma)/N;
-    for (int i=0; i<N; ++i) symm_line_.push_back(Gamma+i*step);
-    step = (X-K)/N;
-    for (int i=0; i<N; ++i) symm_line_.push_back(K+i*step);
-  }
 }
 
 int SRMF::run(const input::Parameters& inputs) 
 {
-  //std::cout << " Exiting at SRMF::SRMF\n";
-  //std::exit(0);
-
-
-  // Chern number
-  if (need_chern_number_) {
-    compute_chern_number();
-  }
-  // Band gap
-  if (need_band_gap_) {
-    compute_band_gap();
-  }
-
-  // Band structure
-  //std::cout << "****SRMF::run:: returning****\n"; return 0;
-  //std::ios state(NULL);
-  //state.copyfmt(std::cout);
-  //std::cout << std::scientific << std::uppercase << std::setprecision(6) << std::right;
-  std::ofstream of("res_energy.txt");
-  of << std::scientific << std::uppercase << std::setprecision(6) << std::right;
-  if (need_ebands_full_) {
-    for (unsigned k=0; k<num_kpoints_; ++k) {
-      //std::cout << k << " of " << symm_line_.size() << "\n";
-      Vector3d kvec = blochbasis_.kvector(k);
-      mf_model_.construct_kspace_block(kvec);
-      //std::cout << mf_model_.quadratic_spinup_block() << "\n"; std::getchar();
-      es_k_up_.compute(mf_model_.quadratic_spinup_block(), Eigen::EigenvaluesOnly);
-      //if (k%graph_.lattice().size1()==0) of << "\n";
-      of << std::setw(6) << k; 
-      of << std::setw(14) << kvec(0) << std::setw(14) << kvec(1); 
-      of << std::setw(14) << es_k_up_.eigenvalues().transpose() << "\n";
-    }
-    //of << "\n\n"; 
-    of << "\n"; 
-  } 
-  if (need_ebands_symm_) {
-    for (unsigned k=0; k<symm_line_.size(); ++k) {
-      //std::cout << k << " of " << symm_line_.size() << "\n";
-      Vector3d kvec = symm_line_[k];
-      mf_model_.construct_kspace_block(kvec);
-      //std::cout << mf_model_.quadratic_spinup_block() << "\n"; getchar();
-      es_k_up_.compute(mf_model_.quadratic_spinup_block(), Eigen::EigenvaluesOnly);
-      //ek.insert(ek.end(),es_k_up.eigenvalues().data(),
-      //    es_k_up.eigenvalues().data()+kblock_dim_);
-      //if (k%graph_.lattice().size1()==0) of << "\n";
-      of << std::setw(6) << k; 
-      of << std::setw(14) << kvec(0) << std::setw(14) << kvec(1); 
-      of << std::setw(14) << es_k_up_.eigenvalues().transpose() << "\n";
-    }
-    of << "\n\n"; 
-  }
-  of.close();
-  //std::sort(ek.begin(),ek.end());
-  //std::cout.copyfmt(state);
+  rotor_.solve(sr_parms_);
   return 0;
 }
 
@@ -140,15 +45,15 @@ int SRMF::compute_chern_number(void)
   ComplexMatrix psi_k(kblock_dim_,kblock_dim_);
   for (unsigned k=0; k<num_kpoints_; ++k) {
     Vector3d kv1 = blochbasis_.kvector(k);
-    mf_model_.construct_kspace_block(kv1);
-    es_k_up_.compute(mf_model_.quadratic_spinup_block());
+    spinon_.construct_kspace_block(kv1);
+    es_k_up_.compute(spinon_.quadratic_spinup_block());
     //psi_k1 = es_k_up_.eigenvectors().col(band_idx);
     psi_k = es_k_up_.eigenvectors();
 
     int k_nn = blochbasis_.mesh_nn_xp(k);
     Vector3d kv2 = blochbasis_.kvector(k_nn);
-    mf_model_.construct_kspace_block(kv2);
-    es_k_up_.compute(mf_model_.quadratic_spinup_block());
+    spinon_.construct_kspace_block(kv2);
+    es_k_up_.compute(spinon_.quadratic_spinup_block());
     /*
     psi_k2 = es_k_up_.eigenvectors().col(band_idx);
     auto x = psi_k1.dot(psi_k2);
@@ -163,8 +68,8 @@ int SRMF::compute_chern_number(void)
 
     k_nn = blochbasis_.mesh_nn_yp(k);
     kv2 = blochbasis_.kvector(k_nn);
-    mf_model_.construct_kspace_block(kv2);
-    es_k_up_.compute(mf_model_.quadratic_spinup_block());
+    spinon_.construct_kspace_block(kv2);
+    es_k_up_.compute(spinon_.quadratic_spinup_block());
     /*
     psi_k2 = es_k_up_.eigenvectors().col(band_idx);
     x = psi_k1.dot(psi_k2);
@@ -229,8 +134,8 @@ int SRMF::compute_band_gap(void)
   for (unsigned k=0; k<num_kpoints_; ++k) {
     //std::cout << k << " of " << symm_line_.size() << "\n";
     Vector3d kvec = blochbasis_.kvector(k);
-    mf_model_.construct_kspace_block(kvec);
-    es_k_up_.compute(mf_model_.quadratic_spinup_block(), Eigen::EigenvaluesOnly);
+    spinon_.construct_kspace_block(kvec);
+    es_k_up_.compute(spinon_.quadratic_spinup_block(), Eigen::EigenvaluesOnly);
     band_lo = band_lo.min(es_k_up_.eigenvalues().array());
     band_hi = band_hi.max(es_k_up_.eigenvalues().array());
   }

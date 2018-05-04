@@ -5,9 +5,21 @@
 #---------------------------------------------
 # Job Specification 
 #---------------------------------------------
-job = "Diagonalization" 
+job = "SRMF"  #"Diagonalization" 
 mode = "NEW" # ("NEW"/"APPEND")
 print_level = -2 #-2
+
+#---------------------------------------------
+# Slave-rotor parameters
+#---------------------------------------------
+tol = 1.0E-8
+#maxiter = 500
+#maxiter_rotor = 500
+#use_previous_iter = "NO"
+#sr_constraint = "GLOBAL"  # ("GLOBAL"/"LOCAL")
+rotor_cluster = "SITE"    # ("SITE"/"BOND"/"CELL")
+max_rotor_charge = +2
+min_rotor_charge = -2
 
 #---------------------------------------------
 # Lattice:

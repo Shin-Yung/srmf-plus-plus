@@ -107,10 +107,10 @@ int Hamiltonian::define_model(const input::Parameters& inputs,
         cc = CouplingConstant({0,"-t"}, {1,"i*tsp"},
           {2,"i*tsp"}, {3,"t"}, {4,"-tsp"},{5,"tsp"});
         add_bondterm(name="hopping", cc, op::dnspin_hop());
+        */
         // Hubbard interaction
         add_parameter(name="U", defval=0.0, inputs);
         add_siteterm(name="hubbard", cc="U", op::hubbard_int());
-        */
         break;
 
       case lattice::lattice_id::HONEYCOMB:
@@ -189,7 +189,7 @@ int Hamiltonian::define_model(const input::Parameters& inputs,
         add_siteterm(name="onsite", cc, op::ni_up());
 
         // bond operators
-        path = "../PyrochloreIrdidate/hoppings/";
+        path = "/Users/amedhi/Projects/PhDs/ArunMaurya/PyrochloreIrdidate/hoppings/";
         cc.create(9);
         expr_mat.resize(6,6);
         expr_mat.getfromtxt(path+"intracell_01.txt");
@@ -212,6 +212,10 @@ int Hamiltonian::define_model(const input::Parameters& inputs,
         expr_mat.getfromtxt(path+"intercell_30.txt");
         cc.add_type(8, expr_mat);
         add_bondterm(name="hopping", cc, op::upspin_hop());
+
+        // Huubard U
+        add_parameter(name="U", defval=0.0, inputs);
+        add_siteterm(name="hubbard", cc="U", op::hubbard_int());
         break;
 
       default:
