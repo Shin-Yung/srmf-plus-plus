@@ -39,8 +39,8 @@ class site_link
 public:
   site_link(const unsigned& bond_id, const bool& incoming) 
     : id_{bond_id}, incoming_{incoming}  {}
-  const unsigned& link_id(void) const { return id_; }
-  const bool& incoming(void) const { return incoming_; }
+  const unsigned& id(void) const { return id_; }
+  const bool& is_incoming(void) const { return incoming_; }
 private:
   unsigned id_{0};
   bool incoming_{false};

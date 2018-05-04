@@ -2,7 +2,7 @@
 * Author: Amal Medhi
 * @Date:   2018-04-19 11:24:03
 * @Last Modified by:   Amal Medhi, amedhi@macbook
-* @Last Modified time: 2018-05-03 22:35:45
+* @Last Modified time: 2018-05-04 17:26:29
 * Copyright (C) Amal Medhi, amedhi@iisertvm.ac.in
 *----------------------------------------------------------------------------*/
 #include "rotor.h"
@@ -76,9 +76,13 @@ Rotor::Rotor(const input::Parameters& inputs, const model::Hamiltonian& model,
 
   // storages
   bond_tchi_.resize(num_bonds_);
+  bond_ke_.resize(num_bonds_);
   site_density_.resize(num_sites_);
   site_mu_.resize(num_sites_);
   site_phi_.resize(num_sites_);
+  trial_phi_.resize(num_sites_);
+  diff_phi_.resize(num_sites_);
+  site_mfp_.resize(num_sites_);
   rotor_mat_.resize(dim_,dim_);
   rotor_mat_.setZero();
   cluster_ham_.resize(dim_, dim_);
@@ -91,8 +95,8 @@ Rotor::Rotor(const input::Parameters& inputs, const model::Hamiltonian& model,
 
   construct_matrix();
   solve_clusters();
-  find_site_density();
-  find_site_phi();
+  eval_particle_density();
+  eval_site_phi();
 }
 
 void Rotor::solve(SR_Params& srparams) 
@@ -102,12 +106,51 @@ void Rotor::solve(SR_Params& srparams)
   constrained_density_ = site_density_.sum()/num_sites_;
   std::cout << "cons_density = " << constrained_density_ << "\n";
 
+  // renormalizing parameters from spinon sector
+  set_renomalizing_params(srparams);
+
+  int max_iter = 100;
+
+  for (int i=0; i<num_sites_; ++i) trial_phi_[i] = 1.0;
+  site_phi_ = trial_phi_;
+  for (int iter=0; iter<max_iter; ++iter) {
+    trial_phi_ = site_phi_;
+    double mu = solve_for_mu();
+    for (int i=0; i<num_sites_; ++i) site_mu_[i] = mu;
+    solve_clusters();
+    eval_site_phi();
+    diff_phi_ = site_phi_ - trial_phi_;
+    double norm = diff_phi_.abs2().maxCoeff();
+    std::cout << "iter = " << iter+1 << ", norm = " << norm << "\n";
+    if (norm<1.0E-8) break;
+  }
+  // bond ke parameters
+  eval_bond_ke();
+}
+
+void Rotor::set_renomalizing_params(const SR_Params& srparams) 
+{
   // bond hopping parameters
   bond_tchi_ = srparams.bond_tchi();
 
-  // chemical potential
-  double mu = solve_for_mu();
-  std::cout << "mu = " << mu << "\n";
+  // site renormalizing parameters
+  if (cluster_type_==cluster_t::SITE) {
+    for (int i=0; i<num_sites_; ++i) {
+      std::complex<double> sum = 0.0;
+      for (const auto& link: site_links_[i] ) {
+        auto tchi = bond_tchi_[link.id()];
+        if (link.is_incoming()) tchi = std::conj(tchi);
+        sum += tchi;
+      }
+      site_mfp_[i] = sum;
+    }
+  }
+  else if (cluster_type_ == cluster_t::BOND) {
+  }
+  else if (cluster_type_ == cluster_t::CELL) {
+  }
+  else {
+  }
 }
 
 double Rotor::solve_for_mu(void) 
@@ -119,15 +162,19 @@ double Rotor::solve_for_mu(void)
   bool is_rising = true;
   boost::math::tools::eps_tolerance<double> tol(3);
   std::pair<double,double> r = boost::math::tools::bracket_and_solve_root(
-    [this](double mu) { 
-      for (int i=0; i<num_sites_; ++i) site_mu_[i] = mu;
-      solve_clusters();
-      find_site_density(); 
-      return site_density_.sum()/num_sites_-constrained_density_; 
-    }, 
+    [this](double mu) { return avg_particle_density_eqn(mu); },
     guess, factor, is_rising, tol, it);
   return r.first + 0.5 * (r.second-r.first);
 } 
+
+double Rotor::avg_particle_density_eqn(const double& mu) 
+{
+  // set chemical potential
+  for (int i=0; i<num_sites_; ++i) site_mu_[i] = mu;
+  solve_clusters();
+  eval_particle_density(); 
+  return avg_density()-constrained_density_;
+}
 
 void Rotor::make_clusters(const SR_Params& srparams)
 {
@@ -170,12 +217,12 @@ void Rotor::solve_clusters(void)
           cluster_ham_(n,n) = (U_half_ * ntheta - mu) * ntheta;
         }
         // site operators
-        auto phi = site_phi_[i];
+        auto matrix_elem = site_phi_[i] * site_mfp_[i];
         for (const auto& elem: siteop_elems_) {
           int m = elem.row();
           int n = elem.col();
-          cluster_ham_(m,n) = phi;
-          cluster_ham_(n,m) = std::conj(phi);
+          cluster_ham_(m,n) = -matrix_elem;
+          cluster_ham_(n,m) = -std::conj(matrix_elem);
         }
         // solve the hamiltonian
         eigen_solver_.compute(cluster_ham_);
@@ -197,20 +244,19 @@ void Rotor::solve_clusters(void)
   //std::cout << "groundstate = " << cluster_groundstate_ << "\n";
 }
 
-void Rotor::find_site_density(void)
+void Rotor::eval_particle_density(void)
 {
-  double norm, ntheta, sum;
+  double ntheta, sum;
   switch (cluster_type_) {
     case cluster_t::SITE:
       for (int i=0; i<clusters_.size(); ++i) {
         sum = 0.0;
         for (auto n=0; n<dim_; ++n) {
-          norm = std::norm(cluster_groundstate_(n,i));
           ntheta = basis_.apply_ni(n);
-          sum += norm * ntheta;
+          sum += ntheta * std::norm(cluster_groundstate_(n,i));
         }
         site_density_[i] = sum;
-        std::cout << "site density = " << i << ": " << sum << "\n";
+        //std::cout << "site density = " << i << ": " << sum << "\n";
       }
       break;
     case cluster_t::BOND:
@@ -220,7 +266,7 @@ void Rotor::find_site_density(void)
   }
 }
 
-void Rotor::find_site_phi(void)
+void Rotor::eval_site_phi(void)
 {
   rotor_basis::idx_t j; // i
   std::complex<double> sum;
@@ -246,6 +292,24 @@ void Rotor::find_site_phi(void)
       break;
     case cluster_t::CELL:
       break;
+  }
+}
+
+void Rotor::eval_bond_ke(void)
+{
+  if (cluster_type_==cluster_t::SITE) {
+    int n = 0;
+    for (auto& bond : bonds_) {
+      auto phi_i = site_phi_[bond.src()];
+      auto phi_j = site_phi_[bond.tgt()];
+      bond_ke_[n++] = std::conj(phi_i) * phi_j;
+    }
+  }
+  else if (cluster_type_ == cluster_t::BOND) {
+  }
+  else if (cluster_type_ == cluster_t::CELL) {
+  }
+  else {
   }
 }
 

@@ -78,6 +78,7 @@ public:
   void solve(SR_Params& srparams);
   //int init(const lattice::Lattice& lattice) override;
   //int finalize(const lattice::LatticeGraph& graph);
+  double avg_density(void) const { return site_density_.sum()/num_sites_; }
   //void update(const input::Parameters& inputs);
 private:
   using LatticeGraph = lattice::LatticeGraph;
@@ -103,8 +104,13 @@ private:
   ArrayXd site_density_;
   std::vector<double> site_mu_;
   ArrayXcd site_phi_;
+  ArrayXcd site_mfp_;
   ArrayXcd bond_tchi_;
-  std::vector<std::complex<double> > bond_B_;
+  ArrayXcd bond_ke_;
+
+
+  ArrayXcd trial_phi_;
+  ArrayXcd diff_phi_;
 
   // hamiltonian matrix
   rotor_basis basis_;
@@ -125,11 +131,14 @@ private:
   */
   void make_clusters(const SR_Params& srparams);
   void construct_matrix(void);
+  void set_renomalizing_params(const SR_Params& srparams);
   double solve_for_mu(void);
   void solve_clusters(void);
-  void find_site_density(void);
-  void find_site_phi(void);
+  void eval_particle_density(void);
+  void eval_site_phi(void);
+  void eval_bond_ke(void);
   void solve_number_density(double mu);
+  double avg_particle_density_eqn(const double& mu); 
 };
 
 
