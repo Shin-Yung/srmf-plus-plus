@@ -2,7 +2,7 @@
 * Author: Amal Medhi
 * @Date:   2018-04-19 11:24:03
 * @Last Modified by:   Amal Medhi, amedhi@macbook
-* @Last Modified time: 2018-05-04 17:26:29
+* @Last Modified time: 2018-05-05 18:17:54
 * Copyright (C) Amal Medhi, amedhi@iisertvm.ac.in
 *----------------------------------------------------------------------------*/
 #include "rotor.h"
@@ -57,6 +57,10 @@ Rotor::Rotor(const input::Parameters& inputs, const model::Hamiltonian& model,
   make_clusters(srparams);
   basis_.construct(sites_per_cluster_,theta_min,theta_max);
   dim_ = basis_.dim();
+  cluster_hams_.resize(clusters_.size());
+  for (auto& mat : cluster_hams_) {
+    mat = ComplexMatrix::Zero(dim_, dim_);
+  }
 
   // Rotor model (signle site approaximation)
   using namespace model;
@@ -83,10 +87,6 @@ Rotor::Rotor(const input::Parameters& inputs, const model::Hamiltonian& model,
   trial_phi_.resize(num_sites_);
   diff_phi_.resize(num_sites_);
   site_mfp_.resize(num_sites_);
-  rotor_mat_.resize(dim_,dim_);
-  rotor_mat_.setZero();
-  cluster_ham_.resize(dim_, dim_);
-  cluster_ham_.setZero();
   cluster_groundstate_.resize(dim_, clusters_.size());
   for (int i=0; i<num_sites_; ++i) {
     site_mu_[i] = 0.0;
@@ -94,9 +94,7 @@ Rotor::Rotor(const input::Parameters& inputs, const model::Hamiltonian& model,
   }
 
   construct_matrix();
-  solve_clusters();
-  eval_particle_density();
-  eval_site_phi();
+  construct_cluster_hams();
 }
 
 void Rotor::solve(SR_Params& srparams) 
@@ -112,17 +110,17 @@ void Rotor::solve(SR_Params& srparams)
   int max_iter = 100;
 
   for (int i=0; i<num_sites_; ++i) trial_phi_[i] = 1.0;
-  site_phi_ = trial_phi_;
   for (int iter=0; iter<max_iter; ++iter) {
-    trial_phi_ = site_phi_;
+    update_with_phi(trial_phi_);
     double mu = solve_for_mu();
-    for (int i=0; i<num_sites_; ++i) site_mu_[i] = mu;
+    update_with_mu(mu);
     solve_clusters();
     eval_site_phi();
     diff_phi_ = site_phi_ - trial_phi_;
     double norm = diff_phi_.abs2().maxCoeff();
     std::cout << "iter = " << iter+1 << ", norm = " << norm << "\n";
     if (norm<1.0E-8) break;
+    trial_phi_ = site_phi_;
   }
   // bond ke parameters
   eval_bond_ke();
@@ -170,7 +168,7 @@ double Rotor::solve_for_mu(void)
 double Rotor::avg_particle_density_eqn(const double& mu) 
 {
   // set chemical potential
-  for (int i=0; i<num_sites_; ++i) site_mu_[i] = mu;
+  update_with_mu(mu);
   solve_clusters();
   eval_particle_density(); 
   return avg_density()-constrained_density_;
@@ -180,7 +178,6 @@ void Rotor::make_clusters(const SR_Params& srparams)
 {
   bonds_ = srparams.bonds();
   site_links_ = srparams.site_links();
-
   clusters_.clear();
   switch (cluster_type_) {
     case cluster_t::SITE:
@@ -205,43 +202,103 @@ void Rotor::make_clusters(const SR_Params& srparams)
 
 void Rotor::solve_clusters(void)
 {
-  switch (cluster_type_) {
-    case cluster_t::SITE:
-      for (int i=0; i<clusters_.size(); ++i) {
-        cluster_ham_.setZero();
-        // diagonal elements
-        double mu = site_mu_[i];
-        for (const auto& elem: diagonal_elems_) {
-          int n = elem.row();
-          double ntheta = elem.value();
-          cluster_ham_(n,n) = (U_half_ * ntheta - mu) * ntheta;
-        }
-        // site operators
-        auto matrix_elem = site_phi_[i] * site_mfp_[i];
-        for (const auto& elem: siteop_elems_) {
-          int m = elem.row();
-          int n = elem.col();
-          cluster_ham_(m,n) = -matrix_elem;
-          cluster_ham_(n,m) = -std::conj(matrix_elem);
-        }
-        // solve the hamiltonian
-        eigen_solver_.compute(cluster_ham_);
-        // store ground state
-        //std::cout << "gndstate = " << eigen_solver_.eigenvectors().col(0) << "\n";
-        cluster_groundstate_.col(i) = eigen_solver_.eigenvectors().col(0);
-        //std::cout << "cluster = " << i << "\n";
-        //std::cout << cluster_ham_ << "\n";
-        //getchar();
-      }
-      break;
-
-    case cluster_t::BOND:
-      break;
-
-    case cluster_t::CELL:
-      break;
+  int i = 0;
+  for (auto& mat : cluster_hams_) {
+    // solve the hamiltonian
+    eigen_solver_.compute(mat);
+    //std::cout << "gndstate = " << eigen_solver_.eigenvectors().col(0) << "\n";
+    //getchar();
+    // store ground state
+    cluster_groundstate_.col(i) = eigen_solver_.eigenvectors().col(0);
+    i++;
   }
-  //std::cout << "groundstate = " << cluster_groundstate_ << "\n";
+}
+
+void Rotor::construct_cluster_hams(void)
+{
+  if (cluster_type_==cluster_t::SITE) {
+    int i = 0;
+    for (auto& mat : cluster_hams_) {
+      // diagonal elements
+      double mu = site_mu_[i];
+      for (const auto& elem: diagonal_elems_) {
+        int n = elem.row();
+        double ntheta = elem.value();
+        mat(n,n) = (U_half_ * ntheta - mu) * ntheta;
+      }
+      // site operators
+      auto matrix_elem = site_phi_[i] * site_mfp_[i];
+      for (const auto& elem: siteop_elems_) {
+        int m = elem.row();
+        int n = elem.col();
+        mat(m,n) = -matrix_elem;
+        mat(n,m) = -std::conj(matrix_elem);
+      }
+      i++;
+    }
+  }
+  else if (cluster_type_==cluster_t::BOND) {
+    throw std::runtime_error("Rotor::construct_cluster_hams: undefined 'cluster_type'");
+  }
+  else if (cluster_type_==cluster_t::CELL) {
+    throw std::runtime_error("Rotor::construct_cluster_hams: undefined 'cluster_type'");
+  }
+  else {
+    throw std::runtime_error("Rotor::construct_cluster_hams: undefined 'cluster_type'");
+  }
+}
+
+void Rotor::update_with_mu(const double& new_mu) 
+{
+  for (auto& mu : site_mu_) mu = new_mu;
+  if (cluster_type_==cluster_t::SITE) {
+    int i = 0;
+    for (auto& mat : cluster_hams_) {
+      double mu = site_mu_[i];
+      for (const auto& elem: diagonal_elems_) {
+        int n = elem.row();
+        double ntheta = elem.value();
+        mat(n,n) = (U_half_*ntheta-mu)*ntheta;
+      }
+      i++;
+    }
+  }
+  else if (cluster_type_==cluster_t::BOND) {
+    throw std::runtime_error("Rotor::update_with_mu: undefined 'cluster_type'");
+  }
+  else if (cluster_type_==cluster_t::CELL) {
+    throw std::runtime_error("Rotor::update_with_mu: undefined 'cluster_type'");
+  }
+  else {
+    throw std::runtime_error("Rotor::update_with_mu: undefined 'cluster_type'");
+  }
+}
+
+void Rotor::update_with_phi(const ArrayXcd& new_phi)
+{
+  site_phi_ = new_phi;
+  if (cluster_type_==cluster_t::SITE) {
+    int i = 0;
+    for (auto& mat : cluster_hams_) {
+      auto matrix_elem = site_phi_[i] * site_mfp_[i];
+      for (const auto& elem: siteop_elems_) {
+        int m = elem.row();
+        int n = elem.col();
+        mat(m,n) = -matrix_elem;
+        mat(n,m) = -std::conj(matrix_elem);
+      }
+      i++;
+    }
+  }
+  else if (cluster_type_==cluster_t::BOND) {
+    throw std::runtime_error("Rotor::update_with_phi: undefined 'cluster_type'");
+  }
+  else if (cluster_type_==cluster_t::CELL) {
+    throw std::runtime_error("Rotor::update_with_phi: undefined 'cluster_type'");
+  }
+  else {
+    throw std::runtime_error("Rotor::update_with_phi: undefined 'cluster_type'");
+  }
 }
 
 void Rotor::eval_particle_density(void)
@@ -339,23 +396,10 @@ void Rotor::construct_matrix(void)
       }
     }
   }
+
   //for (auto& elem : siteop_elems_) std::cout << elem.row() << " " << elem.col() << "\n";
   bondop_elems_.clear();
 
-  // hamiltonian matrix
-  site = 0;
-  double mu = 0.0;
-  for (const auto& elem : diagonal_elems_) {
-    i = elem.row();
-    double ntheta = elem.value();
-    rotor_mat_(i,i) = (U_half_ * ntheta - mu) * ntheta;
-  }
-
-  double phi = 1.0;
-  for (const auto& elem : siteop_elems_) {
-    rotor_mat_(elem.row(), elem.col()) = -phi;
-  }
-  //std::cout << "rotor_mat = \n" << rotor_mat_ << "\n";
 }
 
 

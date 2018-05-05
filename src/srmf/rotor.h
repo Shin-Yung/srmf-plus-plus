@@ -32,15 +32,17 @@ enum cluster_t {SITE, BOND, CELL};
 class Cluster 
 {
 public:
+  Cluster() {}
   Cluster(const cluster_t& type, const int& id, const rotor_basis& basis);
   ~Cluster() {}
 private:
   cluster_t type_{cluster_t::SITE};
   int id_{0};
   unsigned num_sites_{0};
-  unsigned long dim_{0};
+  rotor_basis::idx_t dim_{0};
   ComplexMatrix ham_;
 };*/
+
 class MatrixElem
 {
 public:
@@ -114,8 +116,7 @@ private:
 
   // hamiltonian matrix
   rotor_basis basis_;
-  ComplexMatrix rotor_mat_;
-  ComplexMatrix cluster_ham_;
+  std::vector<ComplexMatrix> cluster_hams_;
   ComplexMatrix cluster_groundstate_;
 
   std::vector<MatrixElem> diagonal_elems_; 
@@ -137,6 +138,9 @@ private:
   void eval_particle_density(void);
   void eval_site_phi(void);
   void eval_bond_ke(void);
+  void construct_cluster_hams(void);
+  void update_with_mu(const double& new_mu);
+  void update_with_phi(const ArrayXcd& new_phi);
   void solve_number_density(double mu);
   double avg_particle_density_eqn(const double& mu); 
 };
