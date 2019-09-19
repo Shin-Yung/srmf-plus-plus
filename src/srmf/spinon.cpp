@@ -12,10 +12,18 @@
 
 namespace srmf {
 
-Spinon::Spinon(const model::Hamiltonian& model, 
-  const lattice::LatticeGraph& graph)
+Spinon::Spinon(const input::Parameters& inputs, const model::Hamiltonian& model, 
+    const lattice::LatticeGraph& graph, const SR_Params& srparams)
 : model::Hamiltonian(model)
 {
+  // add mean-field terms to the spinon model
+  if (graph.lattice().id()==lattice::lattice_id::SQUARE_2BAND) {
+  }
+
+  if (graph.lattice().id()==lattice::lattice_id::PYROCHLORE_3D) {
+  }
+
+
   num_basis_sites_ = graph.lattice().num_basis_sites();
   dim_ = graph.lattice().num_basis_orbitals();
   quadratic_block_up_.resize(dim_,dim_);
@@ -39,6 +47,10 @@ int Spinon::finalize(const lattice::LatticeGraph& graph)
   work.resize(dim_,dim_);
   build_unitcell_terms(graph);
   return 0;
+}
+
+void Spinon::solve(SR_Params& srparams)
+{
 }
 
 void Spinon::update(const input::Parameters& inputs)

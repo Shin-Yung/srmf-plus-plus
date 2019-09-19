@@ -18,6 +18,7 @@
 #include "../model/quantum_op.h"
 #include "../model/model.h"
 #include "../model/matrix.h"
+#include "srparams.h"
 //#include "./blochbasis.h"
 
 constexpr std::complex<double> ii(void) { return std::complex<double>{0.0,static_cast<double>(1.0)}; }
@@ -51,10 +52,12 @@ class Spinon : public model::Hamiltonian
 {
 public:
   Spinon() {}
-  Spinon(const model::Hamiltonian& model, const lattice::LatticeGraph& graph);
+  Spinon(const input::Parameters& inputs, const model::Hamiltonian& model, 
+    const lattice::LatticeGraph& graph, const SR_Params& srparams);
   ~Spinon() {}
   int init(const lattice::Lattice& lattice) override;
   int finalize(const lattice::LatticeGraph& graph);
+  void solve(SR_Params& srparams);
   void update(const input::Parameters& inputs);
   void update_terms(void) override;
   void update_site_parameter(const std::string& pname, const double& pvalue);

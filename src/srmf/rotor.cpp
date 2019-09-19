@@ -2,7 +2,7 @@
 * Author: Amal Medhi
 * @Date:   2018-04-19 11:24:03
 * @Last Modified by:   Amal Medhi, amedhi@macbook
-* @Last Modified time: 2018-05-05 18:17:54
+* @Last Modified time: 2018-05-05 18:20:51
 * Copyright (C) Amal Medhi, amedhi@iisertvm.ac.in
 *----------------------------------------------------------------------------*/
 #include "rotor.h"
@@ -62,7 +62,7 @@ Rotor::Rotor(const input::Parameters& inputs, const model::Hamiltonian& model,
     mat = ComplexMatrix::Zero(dim_, dim_);
   }
 
-  // Rotor model (signle site approaximation)
+  // Rotor model 
   using namespace model;
   std::string name;
   double defval;
@@ -108,7 +108,6 @@ void Rotor::solve(SR_Params& srparams)
   set_renomalizing_params(srparams);
 
   int max_iter = 100;
-
   for (int i=0; i<num_sites_; ++i) trial_phi_[i] = 1.0;
   for (int iter=0; iter<max_iter; ++iter) {
     update_with_phi(trial_phi_);
